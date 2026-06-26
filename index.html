@@ -117,8 +117,8 @@
             searchName: "",
             searchPhone: "",
             
-            firebaseStatus: 'connecting', // 'connecting', 'connected', 'error'
-            firebaseErrorType: null // 'auth', 'firestore', 'unknown'
+            firebaseStatus: 'connecting',
+            firebaseErrorType: null
         };
 
         let db, auth;
@@ -238,7 +238,7 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Rule 3: Auth Before Queries (익명 인증 성공 시 데이터 수신 시작)
+                // Rule 3: Auth Before Queries
                 onAuthStateChanged(auth, (user) => {
                     state.user = user;
                     if (user) {
@@ -252,7 +252,6 @@
 
             } catch (err) {
                 console.error("Firebase 초기화 에러:", err);
-                
                 if (err.code === 'auth/configuration-not-found') {
                     setState({ firebaseStatus: 'error', firebaseErrorType: 'auth' });
                 } else {
@@ -283,7 +282,6 @@
         }
 
         function listenToSettings() {
-            // [수정 완료] 6세그먼트(짝수) 구조로 경로 수정하여 Segment 에러 완전 해결
             const docRef = doc(db, 'artifacts', globalAppId, 'public', 'data', 'config_coll', 'config');
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) state.settings = docSnap.data();
@@ -291,7 +289,6 @@
             });
         }
 
-        // --- 3.1 디버깅 가이드 모달 출력 ---
         window.showFirebaseGuide = () => {
             let message = "";
             let title = "Firebase 설정 가이드";
@@ -313,7 +310,7 @@
             setState({ selectedDate: date });
         };
 
-        // --- 3.2 신청 로직 (안전한 정원 검증 및 실시간 Firestore 기록) ---
+        // --- 3.2 신청 로직 ---
         async function handleRegister(e) {
             e.preventDefault();
             
@@ -334,7 +331,7 @@
             if (!state.selectedDate) { await showAlert("교육 일자를 선택해주세요."); return; }
             if (cleanPhone.length < 9) { await showAlert("올바른 연락처 형식으로 입력해주세요."); return; }
 
-            // 중복 신청 방어 (이름+연락처 알맹이 비교로 실시간 통제)
+            // 중복 신청 방어
             const isDuplicate = state.registrations.some(r => 
                 r.name === name && cleanPhoneNumber(r.phone) === cleanPhone
             );
@@ -343,7 +340,6 @@
                 return;
             }
 
-            // 실시간 메모리 데이터로 1차 정원 검사 (보안 규격과 부하 분산 유지)
             const count = state.registrations.filter(r => 
                 r.date === state.selectedDate && r.time === '정규'
             ).length;
@@ -380,7 +376,7 @@
             }
         }
 
-        // --- 3.3 일정 변경 로직 (트랜잭션 최적화) ---
+        // --- 3.3 일정 변경 로직 ---
         async function handleUpdate(e) {
             e.preventDefault();
             if (!checkTimeLimits()) return;
@@ -388,7 +384,6 @@
             const docId = state.editRegistrationId;
             if (!docId) return;
 
-            // 정원 체크 (변경하고자 하는 타겟 날짜 정원 확인, 내 기존 예약 제외)
             const count = state.registrations.filter(r => 
                 r.date === state.selectedDate && 
                 r.time === '정규' &&
@@ -516,7 +511,6 @@
             const startAt = document.getElementById('settings-start').value;
             const endAt = document.getElementById('settings-end').value;
             try {
-                // [수정 완료] 6세그먼트(짝수) 구조로 설정 저장 경로 수정
                 const docRef = doc(db, 'artifacts', globalAppId, 'public', 'data', 'config_coll', 'config');
                 await setDoc(docRef, { startAt, endAt });
                 showAlert("설정 저장에 성공했습니다.");
@@ -830,7 +824,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button onclick="window.resetToHome()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors text-lg">메인 화면으로</button>
+                            <button onclick="window.setView('auth_check')" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors text-lg">신청 내역 조회</button>
                         </div>
                     </div>
                 `;
